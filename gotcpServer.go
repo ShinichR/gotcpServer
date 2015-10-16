@@ -34,7 +34,8 @@ func NewServer(config *ServerConfig, callback ConnCallback, protocol LayerProtoc
 }
 
 func (s *TcpServer) Start(acTimeout time.Duration) {
-	tcpAddr, err := net.ResolveTCPAddr("tcp4", ":11125")
+	port := fmt.Sprintf(":%d", s.config.Port)
+	tcpAddr, err := net.ResolveTCPAddr("tcp4", port)
 	Errdeal(err)
 	listener, err := net.ListenTCP("tcp", tcpAddr)
 	Errdeal(err)
