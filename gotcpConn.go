@@ -33,6 +33,7 @@ type Conn struct {
 	CloseConnChan chan int
 	pktSendChan   chan Packet
 	pktRecvChan   chan Packet
+	connwaitGroup *sync.WaitGroup
 }
 
 // newConn returns a wrapper of raw conn
@@ -43,20 +44,22 @@ func newConn(conn *net.TCPConn, srv *TcpServer) *Conn {
 		CloseConnChan: make(chan int),
 		pktSendChan:   make(chan Packet, srv.config.SendChanLimit),
 		pktRecvChan:   make(chan Packet, srv.config.SendChanLimit),
+		connwaitGroup: &sync.WaitGroup{},
 	}
 }
 
 // gotcpServer  conn do function
 
 func (c *Conn) Do() {
-	c.srv.waitGroup.Add(3)
+	defer c.srv.waitGroup.Done()
+	c.connwaitGroup.Add(3)
 	if !c.srv.callback.OnConnect() {
 		return
 	}
 	go c.pktReadDo()
 	go c.pktHandDo()
 	go c.pktWriteDo()
-	c.srv.waitGroup.Wait()
+	c.connwaitGroup.Wait()
 	fmt.Println("conn is closed...")
 }
 
@@ -112,7 +115,8 @@ func (c *Conn) pktReadDo() {
 	defer func() {
 		recover()
 		c.Close()
-		c.srv.waitGroup.Done()
+		c.connwaitGroup.Done()
+		fmt.Println("pktReadDo done")
 	}()
 
 	for {
@@ -139,7 +143,8 @@ func (c *Conn) pktWriteDo() {
 	defer func() {
 		recover()
 		c.Close()
-		c.srv.waitGroup.Done()
+		c.connwaitGroup.Done()
+		fmt.Println("pktWriteDo done")
 	}()
 
 	for {
@@ -166,7 +171,8 @@ func (c *Conn) pktHandDo() {
 	defer func() {
 		recover()
 		c.Close()
-		c.srv.waitGroup.Done()
+		c.connwaitGroup.Done()
+		fmt.Println("pktHandDo done")
 	}()
 
 	for {
