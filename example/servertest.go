@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/ShinichR/gotcpServer"
-
+	"github.com/ShinichR/gotcpServer/protocol"
 	"os"
 	"os/signal"
 	"runtime"
@@ -19,7 +19,19 @@ func (this *Callback) OnConnect() bool {
 	return true
 }
 
-type Protocol struct{}
+func (this *Callback) OnMessage(c *gotcpServer.Conn, p gotcpServer.Packet) bool {
+	echoPacket := p.(*protocol.EchoPacket)
+	fmt.Printf("OnMessage:%v\n", string(echoPacket.GetBody()))
+	c.WritePkt(protocol.NewEchoPacket(echoPacket.Serialize(), true), time.Second)
+
+	return true
+}
+
+func (this *Callback) OnClose(c *gotcpServer.Conn) {
+
+	fmt.Println("OnClose:")
+
+}
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
@@ -31,7 +43,7 @@ func main() {
 	}
 
 	fmt.Println("this is server test example")
-	srv := gotcpServer.NewServer(config, &Callback{}, &Protocol{})
+	srv := gotcpServer.NewServer(config, &Callback{}, &protocol.EchoProtocol{})
 
 	go srv.Start(time.Second)
 

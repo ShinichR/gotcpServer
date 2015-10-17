@@ -54,19 +54,20 @@ func (s *TcpServer) Start(acTimeout time.Duration) {
 		default:
 		}
 		listener.SetDeadline(time.Now().Add(acTimeout))
-		_, err := listener.AcceptTCP()
+		conn, err := listener.AcceptTCP()
 		if err != nil {
 			continue
 		}
 
 		s.waitGroup.Add(1)
 		fmt.Println("new client connected...")
+		go newConn(conn, s).Do()
 
 	}
 }
 func (s *TcpServer) Stop() {
 	close(s.exitChan)
-	s.waitGroup.Wait()
+
 }
 func Errdeal(err error) {
 	if err != nil {
